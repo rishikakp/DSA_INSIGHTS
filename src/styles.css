@@ -6594,3 +6594,14 @@ ul { list-style: none; }
   background: rgba(99, 102, 241, 0.22);
   transform: translateY(-1px);
 }
+
+.app-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: #c7c7e0;
+  font-size: 15px;
+  letter-spacing: .3px;
+}
+

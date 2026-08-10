@@ -1,7 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { SignUp, SignIn, useUser, useClerk } from '@clerk/react';
-import { problems } from './problems';
+import { problems, loadProblems } from './problems';
 import { getComplexity } from './complexity';
 const PROFILE_KEY = (id) => `dsa-profile-${id}`;
 const SOLVED_KEY = (id) => `dsa-solved-${id}`;
@@ -2049,12 +2049,21 @@ ANSWER EVALUATION GUIDELINES:
 // ============================================================
 function AuthenticatedApp({ userId, userName, userEmail, onGoHome, }) {
     const [page, setPage] = useState('home');
-    const [selectedId, setSelectedId] = useState(problems[0].id);
+    const [selectedId, setSelectedId] = useState(() => problems[0]?.id ?? null);
     const [solvedProblems, setSolvedProblems] = useState(new Set());
     const [profile, setProfile] = useState(emptyProfile());
     const [loaded, setLoaded] = useState(false);
     const [resumeText, setResumeText] = useState('');
     const [celebrations, setCelebrations] = useState([]);
+    const [problemsReady, setProblemsReady] = useState(false);
+    useEffect(() => {
+        loadProblems().finally(() => setProblemsReady(true));
+    }, []);
+    useEffect(() => {
+        if (problemsReady && selectedId == null && problems.length) {
+            setSelectedId(problems[0].id);
+        }
+    }, [problemsReady, selectedId]);
     useEffect(() => {
         loadProfile(userId).then(p => { setProfile(p); setLoaded(true); });
         loadSolved(userId).then(s => setSolvedProblems(s));
@@ -2086,9 +2095,12 @@ function AuthenticatedApp({ userId, userName, userEmail, onGoHome, }) {
                 window.setTimeout(() => setCelebrations(cs => cs.filter(c => c.id !== id)), 2000);
             }, i * 600);
         });
-    }, [solvedProblems, profile, userId]);
+    }, [solvedProblems, profile, userId, problemsReady]);
     const selectProblem = (id) => { setSelectedId(id); setPage('editor'); };
     const renderCelebrations = () => (_jsx(_Fragment, { children: celebrations.map(c => (_jsx("div", { className: "global-celebrate", children: _jsxs("div", { className: "global-celebrate-card", style: { borderColor: `${c.color}88` }, children: [_jsx("div", { className: "global-celebrate-icon", style: { color: c.color }, children: c.icon }), _jsxs("div", { className: "global-celebrate-body", children: [_jsx("div", { className: "global-celebrate-title", children: '\u{1F389} Congratulations!' }), _jsxs("div", { className: "global-celebrate-sub", children: ["You unlocked ", _jsx("b", { style: { color: c.color }, children: c.title })] }), _jsx("div", { className: "global-celebrate-desc", children: c.desc })] })] }) }, c.id))) }));
+    if (!problemsReady) {
+        return _jsx("div", { className: "app-loading", children: "Loading problems..." });
+    }
     if (page === 'editor') {
         return (_jsxs(_Fragment, { children: [renderCelebrations(), _jsx(EditorPage, { problemId: selectedId, onBack: () => setPage('home'), userName: userName, userId: userId, solvedProblems: solvedProblems, setSolvedProblems: setSolvedProblems, profile: profile, setProfile: setProfile })] }));
     }
