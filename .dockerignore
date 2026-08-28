@@ -1,0 +1,10 @@
+node_modules/
+dist/
+backend/target/
+backend/.mvn/
+.git/
+*.log
+.env
+.DS_Store
+Thumbs.db
+image.png

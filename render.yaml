@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: dsa-insights
+    runtime: docker
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /api/health
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        sync: false
+        # Optional: used only at build time to enable Clerk auth. Leave blank to run without auth.
