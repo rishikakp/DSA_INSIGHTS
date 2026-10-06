@@ -1,5 +1,7 @@
 # DSA INSIGHTS AI
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/rishikakp/DSA_INSIGHTS)
+
 A full-stack DSA coding platform with AI-powered mock interviews, real-time multi-language code execution, voice (TTS/STT) support, and performance tracking.
 
 **Backend is Java / Spring Boot.** The React frontend is kept as-is and built into the Spring Boot jar as static resources.
