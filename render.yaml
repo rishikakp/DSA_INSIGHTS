@@ -4,12 +4,11 @@ services:
     runtime: docker
     plan: free
     autoDeploy: true
-    # Render injects PORT=10000 by default, which would override the app's
-    # default of 3001. Pinning both keeps the app, Render's port scanner and
-    # the Dockerfile EXPOSE 3001 in agreement instead of silently 502ing.
-    port: 3001
     healthCheckPath: /api/health
     envVars:
+      # Render injects PORT=10000 by default, which would override the app's
+      # default of 3001. Pinning it keeps the app, Render's port scanner and
+      # the Dockerfile EXPOSE 3001 in agreement instead of 502ing.
       - key: PORT
         value: "3001"
       - key: GROQ_API_KEY
