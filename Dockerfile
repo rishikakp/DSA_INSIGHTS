@@ -32,5 +32,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY --from=backend /build/backend/target/dsa-insights-backend-0.1.0.jar app.jar
 EXPOSE 3001
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=70.0 -XX:+UseContainerSupport"
+# Tuned for a 512 MB container (Koyeb/Render free tier): 70% heap left too little
+# for metaspace, thread stacks and the node/python/g++/javac child processes the
+# code runner spawns. Override JAVA_OPTS at runtime if you give it more memory.
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=45.0 -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=64m -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError"
 CMD ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
