@@ -7,9 +7,9 @@ backend/target/
 backend/*.log
 backend/*.pid
 
-# Built frontend (vite outputs here) - keep only the placeholder index.html
-backend/src/main/resources/static/*
-!backend/src/main/resources/static/index.html
+# Built frontend (vite outputs into the Spring Boot static folder).
+# It is committed on purpose so a fresh clone serves a working UI from
+# `mvnw spring-boot:run` without needing `npm run build` first.
 
 # Environment / secrets
 .env

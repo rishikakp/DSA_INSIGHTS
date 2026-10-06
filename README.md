@@ -1,6 +1,6 @@
 # DSA INSIGHTS AI
 
-**Live demo:** https://dsainsights-production.up.railway.app/
+**Deployment:** https://dsainsights-production.up.railway.app/ (redeploy with `railway up` — see [Deployment](#deployment))
 
 A full-stack DSA coding platform with AI-powered mock interviews, real-time multi-language code execution, voice (TTS/STT) support, and performance tracking.
 
@@ -56,26 +56,72 @@ EDGE_TTS_PATH=edge-tts              # optional, absolute path to edge-tts
 
 ## Running
 
+### Quick start (recommended) — everything on http://localhost:3001
+
+```bash
+npm install
+npm start          # builds the React app into backend/src/main/resources/static,
+                   # packages the jar, then runs it
+# Open http://localhost:3001
+```
+
+`npm run backend:run` is equivalent.
+
 ### Backend only (REST API on http://localhost:3001)
 
 ```bash
-cd backend
-mvnw spring-boot:run          # Windows: mvnw.cmd spring-boot:run
+npm run backend:dev            # builds the frontend, then spring-boot:run
 ```
+
+> The frontend is served from `backend/src/main/resources/static`, so the
+> frontend **must** be built before the backend serves a page. Every `backend:*`
+> script does that for you. Running `mvnw spring-boot:run` on its own without a
+> prior `npm run build` will serve a stale/broken `index.html`.
 
 ### Frontend dev server (http://localhost:4173, proxies /api and /execute to :3001)
 
+Run this in one terminal and the backend in another:
+
 ```bash
-npm run dev
+npm run dev       # terminal 1 — Vite dev server with hot reload
+npm run backend:dev   # terminal 2 — Spring Boot API
 ```
 
 ### Full-stack single jar
 
 ```bash
-npm run fullstack:build      # builds React into backend/src/main/resources/static, then packages the jar
+npm run fullstack:build        # = npm run backend:build
 java -jar backend/target/dsa-insights-backend-0.1.0.jar
 # Open http://localhost:3001
 ```
+
+### Database
+
+MongoDB is **optional**. If it is not reachable, every `/api/user/*`,
+`/api/leaderboard` and `/api/db/status` route returns `{ "fallback": true }`
+immediately and the frontend uses `localStorage` instead. Connection attempts
+time out after 1.5s (not the driver's 30s default) and the verdict is cached
+for 15s, so an absent database never stalls the UI.
+
+## Deployment
+
+`Dockerfile` builds the React app, packages it into the Spring Boot jar, and
+runs it in one image. `railway.json` pins Railway to that Dockerfile with
+`/api/health` as the health check.
+
+```bash
+# Railway
+railway login
+railway init          # or: railway link
+railway up
+railway variables set GROQ_API_KEY=<key>
+# Optional: MONGO_URI, VITE_CLERK_PUBLISHABLE_KEY (build-time only)
+```
+
+The app listens on `$PORT` (Railway/Render inject it), defaulting to `3001`.
+
+A working `MONGO_URI` and `GROQ_API_KEY` are only needed for persistence and
+the AI interview features; without them the site still loads and runs code.
 
 ## API Endpoints
 

@@ -130,10 +130,13 @@ const loadSolved = async (id) => {
     return new Set(res.solved || []);
 };
 const saveSolved = async (id, s) => {
-    await apiPost(`/user/${id}/solved`, { problemId: -1 });
+    await apiPost(`/user/${id}/solved`, { problemIds: [...s] });
     localStorage.setItem(`dsa-solved-${id}`, JSON.stringify([...s]));
 };
-const categories = Array.from(new Set(problems.map(p => p.category)));
+// `problems` starts as [] and is filled by loadProblems() later, so the topic
+// list must be computed lazily — computing it here at module load always yields
+// [] and the page shows "0 DSA topics" with an empty topic filter.
+const getCategories = () => Array.from(new Set(problems.map(p => p.category)));
 // ============================================================
 // SYNTAX HIGHLIGHTING
 // ============================================================
@@ -1048,6 +1051,7 @@ function ProblemsPage({ solvedProblems, onSelectProblem, onBack, }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [diffFilter, setDiffFilter] = useState('all');
     const [catFilter, setCatFilter] = useState('all');
+    const categories = getCategories();
     const filtered = problems.filter(p => {
         if (searchQuery && !p.title.toLowerCase().includes(searchQuery.toLowerCase()))
             return false;
@@ -2056,17 +2060,34 @@ function AuthenticatedApp({ userId, userName, userEmail, onGoHome, }) {
     const [resumeText, setResumeText] = useState('');
     const [celebrations, setCelebrations] = useState([]);
     const [problemsReady, setProblemsReady] = useState(false);
+    const [problemsError, setProblemsError] = useState(null);
+    const [problemsAttempt, setProblemsAttempt] = useState(0);
     useEffect(() => {
-        loadProblems().finally(() => setProblemsReady(true));
-    }, []);
+        let cancelled = false;
+        setProblemsReady(false);
+        setProblemsError(null);
+        loadProblems()
+            .then(() => { if (!cancelled)
+                setProblemsReady(true); })
+            .catch((e) => {
+            if (cancelled)
+                return;
+            setProblemsError(e && e.message ? e.message : 'failed to load problems');
+            setProblemsReady(true);
+        });
+        return () => { cancelled = true; };
+    }, [problemsAttempt]);
     useEffect(() => {
         if (problemsReady && selectedId == null && problems.length) {
             setSelectedId(problems[0].id);
         }
     }, [problemsReady, selectedId]);
     useEffect(() => {
-        loadProfile(userId).then(p => { setProfile(p); setLoaded(true); });
-        loadSolved(userId).then(s => setSolvedProblems(s));
+        loadProfile(userId)
+            .then(p => setProfile(p))
+            .catch(() => setProfile(emptyProfile()))
+            .finally(() => setLoaded(true));
+        loadSolved(userId).then(s => setSolvedProblems(s)).catch(() => { });
     }, [userId]);
     useEffect(() => { if (loaded)
         saveProfile(userId, profile); }, [profile, loaded, userId]);
@@ -2100,6 +2121,17 @@ function AuthenticatedApp({ userId, userName, userEmail, onGoHome, }) {
     const renderCelebrations = () => (_jsx(_Fragment, { children: celebrations.map(c => (_jsx("div", { className: "global-celebrate", children: _jsxs("div", { className: "global-celebrate-card", style: { borderColor: `${c.color}88` }, children: [_jsx("div", { className: "global-celebrate-icon", style: { color: c.color }, children: c.icon }), _jsxs("div", { className: "global-celebrate-body", children: [_jsx("div", { className: "global-celebrate-title", children: '\u{1F389} Congratulations!' }), _jsxs("div", { className: "global-celebrate-sub", children: ["You unlocked ", _jsx("b", { style: { color: c.color }, children: c.title })] }), _jsx("div", { className: "global-celebrate-desc", children: c.desc })] })] }) }, c.id))) }));
     if (!problemsReady) {
         return _jsx("div", { className: "app-loading", children: "Loading problems..." });
+    }
+    if (problemsError) {
+        return (_jsxs("div", { className: "app-loading", children: [
+            _jsx("div", { children: "Could not load the problem set." }),
+            _jsx("div", { style: { color: '#888', fontSize: '13px', marginTop: '8px' }, children: [
+                "Make sure the backend is running",
+                _jsx("code", { children: " (npm run backend:dev)" }),
+                " on port 3001."
+            ] }),
+            _jsx("button", { className: "primary-button", style: { marginTop: '16px' }, onClick: () => setProblemsAttempt(a => a + 1), children: "Retry" })
+        ] }));
     }
     if (page === 'editor') {
         return (_jsxs(_Fragment, { children: [renderCelebrations(), _jsx(EditorPage, { problemId: selectedId, onBack: () => setPage('home'), userName: userName, userId: userId, solvedProblems: solvedProblems, setSolvedProblems: setSolvedProblems, profile: profile, setProfile: setProfile })] }));

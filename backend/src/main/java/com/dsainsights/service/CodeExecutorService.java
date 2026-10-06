@@ -226,18 +226,40 @@ public class CodeExecutorService {
     }
 
     private ExecResult execWithFallback(List<String> cmd, long timeoutMs) {
-        if (!cmd.isEmpty() && "__python__".equals(cmd.get(0))) {
-            List<String> without = new ArrayList<>(cmd);
-            without.set(0, "python3");
-            ExecResult r = exec(without, timeoutMs);
-            if (!r.started()) {
-                List<String> alt = new ArrayList<>(cmd);
-                alt.set(0, "python");
-                return exec(alt, timeoutMs);
+        if (!cmd.isEmpty() && "__python__".equals(cmd.get(0)) && cmd.size() == 2) {
+            // On Windows `python3` is usually a Microsoft Store alias stub that
+            // exits with "Python was not found", so order the attempts by platform
+            // and treat that stub output as a miss rather than a result.
+            String preferred = isWindows() ? "python" : "python3";
+            String alternate = isWindows() ? "python3" : "python";
+
+            ExecResult primary = exec(withPythonBinary(cmd, preferred), timeoutMs);
+            if (primary.started() && !looksLikeMissingPython(primary)) {
+                return primary;
             }
-            return r;
+            ExecResult secondary = exec(withPythonBinary(cmd, alternate), timeoutMs);
+            if (secondary.started() && !looksLikeMissingPython(secondary)) {
+                return secondary;
+            }
+            return new ExecResult(false, false, "",
+                    "Python interpreter not found. Install Python 3 and make sure "
+                            + "`python` (or `python3`) is on PATH.");
         }
         return exec(cmd, timeoutMs);
+    }
+
+    private List<String> withPythonBinary(List<String> cmd, String binary) {
+        List<String> copy = new ArrayList<>(cmd);
+        copy.set(0, binary);
+        return copy;
+    }
+
+    private boolean looksLikeMissingPython(ExecResult r) {
+        String combined = (r.stdout() + "\n" + r.stderr()).toLowerCase();
+        return combined.contains("python was not found")
+                || combined.contains("'python' is not recognized")
+                || combined.contains("\"python\" is not recognized")
+                || combined.contains("python: command not found");
     }
 
     private String clean(String code, String language) {

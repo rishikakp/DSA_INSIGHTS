@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -46,7 +47,15 @@ public class UserController {
     public Map<String, Object> addSolved(@PathVariable String userId, @RequestBody Map<String, Object> body) {
         Integer problemId = body.get("problemId") == null ? null
                 : ((Number) body.get("problemId")).intValue();
-        return userService.addSolved(userId, problemId);
+        List<Integer> problemIds = null;
+        Object raw = body.get("problemIds");
+        if (raw instanceof List<?> list) {
+            problemIds = list.stream()
+                    .filter(Number.class::isInstance)
+                    .map(n -> ((Number) n).intValue())
+                    .toList();
+        }
+        return userService.addSolved(userId, problemId, problemIds);
     }
 
     @GetMapping("/api/leaderboard")
