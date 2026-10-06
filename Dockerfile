@@ -23,12 +23,21 @@ RUN mvn -f backend/pom.xml clean package -DskipTests \
     && ls -la backend/target/*.jar
 
 # ---- Stage 3: runtime (JDK + runtimes for code execution) ----
-FROM eclipse-temurin:17-jdk
+# Node comes from the official tarball, not Debian's nodejs/npm: the distro
+# packages pull ~341 node-* debs (~160 MB) and Koyeb's free tier only has 2 GB
+# of disk, so every megabyte here matters.
+FROM eclipse-temurin:17-jdk AS runtime
+ARG NODE_VERSION=20.18.0
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates nodejs npm python3 g++ \
+        ca-certificates curl python3 g++ xz-utils \
+    && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+        | tar -xJ -C /usr/local --strip-components=1 \
+    && rm -rf /usr/local/include \
     && npm install -g tsx \
-    && rm -rf /var/lib/apt/lists/* \
-    && node --version && npm --version && python3 --version && g++ --version | head -1
+    && apt-get purge -y --auto-remove curl xz-utils \
+    && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/* \
+    && node --version && npm --version && npx --version \
+    && python3 --version && g++ --version | head -1
 WORKDIR /app
 COPY --from=backend /build/backend/target/dsa-insights-backend-0.1.0.jar app.jar
 EXPOSE 3001
