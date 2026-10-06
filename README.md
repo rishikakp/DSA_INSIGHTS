@@ -4,6 +4,49 @@ A full-stack DSA coding platform with AI-powered mock interviews, real-time mult
 
 **Backend is Java / Spring Boot.** The React frontend is kept as-is and built into the Spring Boot jar as static resources.
 
+## Run it on any machine
+
+> `http://localhost:3001` only works **after the app is running on that PC**.
+> Opening the link in a browser does nothing on its own — start the server
+> first, then the link works.
+
+**Windows** — clone/copy the project, then double-click:
+
+```
+start.bat
+```
+
+It installs npm packages, builds the frontend + jar on first run, starts the
+server, waits until it is healthy, and opens `http://localhost:3001` for you.
+
+**macOS / Linux:**
+
+```bash
+./start.sh
+```
+
+### Prerequisites
+
+| Tool | Version | Windows (winget) | macOS / Ubuntu |
+|------|---------|------------------|----------------|
+| JDK  | 17+ | `winget install Microsoft.OpenJDK.17` | `brew install openjdk@17` / `sudo apt install openjdk-17-jdk` |
+| Node.js | 18+ | `winget install OpenJS.NodeJS.LTS` | `brew install node` / `sudo apt install nodejs npm` |
+
+Internet is needed **once** on the first run (Maven downloads Spring Boot, npm
+downloads packages). After that it starts offline.
+
+Optional, only for extra features: MongoDB (persistence + leaderboard),
+`GROQ_API_KEY` (AI interviews), `g++` / `python` (C++ and Python code execution).
+
+### If the link does not open
+
+- `ERR_CONNECTION_REFUSED` → the server is not running. Start it with
+  `start.bat` / `./start.sh` and wait for `Started DsaInsightsApplication`.
+- `Port 3001 is already in use` → another copy is already running; the
+  launcher detects this and just opens the browser.
+- Check it answered: `http://localhost:3001/api/health` should return
+  `{"status":"ok","service":"java-spring"}`.
+
 ## Tech Stack
 
 | Layer      | Technology                                             |
