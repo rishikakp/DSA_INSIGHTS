@@ -1,7 +1,5 @@
 # DSA INSIGHTS AI
 
-**Deployment:** https://dsainsights-production.up.railway.app/ (redeploy with `railway up` — see [Deployment](#deployment))
-
 A full-stack DSA coding platform with AI-powered mock interviews, real-time multi-language code execution, voice (TTS/STT) support, and performance tracking.
 
 **Backend is Java / Spring Boot.** The React frontend is kept as-is and built into the Spring Boot jar as static resources.
@@ -106,19 +104,26 @@ for 15s, so an absent database never stalls the UI.
 ## Deployment
 
 `Dockerfile` builds the React app, packages it into the Spring Boot jar, and
-runs it in one image. `railway.json` pins Railway to that Dockerfile with
-`/api/health` as the health check.
+runs it in one image.
 
 ```bash
-# Railway
-railway login
-railway init          # or: railway link
-railway up
-railway variables set GROQ_API_KEY=<key>
-# Optional: MONGO_URI, VITE_CLERK_PUBLISHABLE_KEY (build-time only)
+docker build -t dsa-insights .
+docker run -p 3001:3001 \
+  -e GROQ_API_KEY=<groq key> \
+  -e MONGO_URI=mongodb://host:27017/dsa_insights \
+  dsa-insights
+# Open http://localhost:3001
 ```
 
-The app listens on `$PORT` (Railway/Render inject it), defaulting to `3001`.
+`VITE_CLERK_PUBLISHABLE_KEY` is a build-time argument only — pass it with
+`docker build --build-arg VITE_CLERK_PUBLISHABLE_KEY=<key>` if you want Clerk
+auth; leave it out to run without auth.
+
+`render.yaml` describes an equivalent Render web service (Docker runtime, free
+plan, `/api/health` health check).
+
+The app listens on `$PORT` when one is provided by the host, defaulting to
+`3001`.
 
 A working `MONGO_URI` and `GROQ_API_KEY` are only needed for persistence and
 the AI interview features; without them the site still loads and runs code.
